@@ -416,6 +416,9 @@ def procesar_pdf(path: str) -> bool:
             shutil.move(path, os.path.join(DIR_ERR, fname))
             return False
 
+        # ✅ agrega esta línea para ver confirmación en consola
+        print(f"✅ OK → {data.get('tipo_contribuyente','?')} | RFC {data.get('rfc','?')} | ArchivoID {archivo_id}")
+
         # mover a procesados y dejar una traza del texto
         new_path = os.path.join(DIR_OUT, fname)
         try:

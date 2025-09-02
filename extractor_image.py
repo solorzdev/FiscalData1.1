@@ -431,7 +431,7 @@ def convert_to_webp(img_path: str, quality: int = 80) -> str:
         logging.warning(f"No se pudo convertir a WebP ({img_path}): {e}")
         return img_path
 
-def purge_processed(retention_days: int = 7, base_dir: str = DIR_OUT):
+def purge_processed(retention_days: int = 1, base_dir: str = DIR_OUT):
     cutoff = time.time() - retention_days * 86400
     removed = 0
     for root, _, files in os.walk(base_dir):
@@ -443,7 +443,7 @@ def purge_processed(retention_days: int = 7, base_dir: str = DIR_OUT):
                     removed += 1
             except Exception:
                 pass
-    print(f"🧹 Purgados {removed} archivo(s) de '{base_dir}' (> {retention_days} días).")
+    print(f"🧹 Purgados {removed} archivo(s) de '{base_dir}' (> {retention_days} día).")
 
 # ===============================
 # Main
@@ -460,7 +460,7 @@ def main():
     if not imgs:
         print(f"❌ No hay imágenes en '{DIR_IN}'")
         logging.info("No hay imágenes para procesar.")
-        purge_processed(retention_days=7, base_dir=DIR_OUT)
+        purge_processed(retention_days=1, base_dir=DIR_OUT)
         return
 
     for path in imgs:
@@ -540,7 +540,7 @@ def main():
             print(f"   ❌ Error crítico con {fname}: {e}")
             logging.error(f"Error crítico procesando {fname}: {e}")
 
-    purge_processed(retention_days=7, base_dir=DIR_OUT)
+    purge_processed(retention_days=1, base_dir=DIR_OUT)
     print("🏁 Listo.")
 
 if __name__ == "__main__":
