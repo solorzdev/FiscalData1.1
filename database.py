@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # db_conn.py robusto
 import re
 import logging
@@ -14,8 +15,30 @@ def conectar():
     return mysql.connector.connect(
         host=DB_HOST, user=DB_USER, password=DB_PASSWORD,
         database=DB_NAME, port=DB_PORT
-    )
+=======
+import os
+import pyodbc
+import re
+from typing import Dict, Any, Optional
+from config import (
+    ARCHIVOS_SERVER, ARCHIVOS_DATABASE, ARCHIVOS_USER, ARCHIVOS_PASSWORD, ARCHIVOS_DRIVER
+)
 
+# =========================
+# Conexión SQL Server (ARCHIVOS)
+# =========================
+def connect_archivos():
+    cs = (
+        f"DRIVER={{{ARCHIVOS_DRIVER}}};"
+        f"SERVER={ARCHIVOS_SERVER};"
+        f"DATABASE={ARCHIVOS_DATABASE};"
+        f"UID={ARCHIVOS_USER};PWD={ARCHIVOS_PASSWORD};"
+        f"TrustServerCertificate=yes;"
+>>>>>>> Stashed changes
+    )
+    return pyodbc.connect(cs, autocommit=False)
+
+<<<<<<< Updated upstream
 # ---------- Normalizadores ----------
 _ALNUM_RFC = re.compile(r"[^A-Z0-9Ñ&]")
 _ALNUM_CURP = re.compile(r"[^A-Z0-9]")
@@ -121,3 +144,87 @@ def guardar_datos(datos: dict) -> bool:
     finally:
         cur.close()
         con.close()
+=======
+# =========================
+# Utilidades
+# =========================
+def parse_archivo_id_from_filename(filename: str) -> Optional[int]:
+    """
+    Acepta patrones como:
+      231039.pdf
+      1014_231039.pdf
+      1017_231039_p1.png
+      1014-231039.jpg
+    Devuelve el ÚLTIMO bloque de 5-9 dígitos (ignorando sufijos tipo _p1).
+    """
+    base = os.path.basename(filename)
+    name, _ = os.path.splitext(base)
+    # quita sufijos tipo _p1, _p2, etc.
+    name = re.sub(r'(_p\d+)$', '', name, flags=re.IGNORECASE)
+
+    # toma todos los grupos numéricos largos y retorna el último
+    grupos = re.findall(r'(\d{5,9})', name)
+    if not grupos:
+        return None
+    try:
+        return int(grupos[-1])
+    except Exception:
+        return None
+
+def _build_update_set_clause(campos: Dict[str, Any]) -> str:
+    """
+    Construye dinámicamente el SET para UPDATE SOLO con campos no None.
+    Además fuerza Procesado=1 y FechaProcesado=GETDATE().
+    """
+    assigns = []
+    for col, val in campos.items():
+        if val is not None:
+            assigns.append(f"{col} = ?")
+    # banderas de proceso
+    assigns.append("Procesado = 1")
+    assigns.append("FechaProcesado = GETDATE()")
+    return ", ".join(assigns)
+
+def actualizar_archivo_constancia(archivo_id: int, datos: Dict[str, Any]) -> bool:
+    """
+    Actualiza dbo.Archivo por ArchivoID con los campos de constancia fiscal.
+    SOLO actualiza columnas cuyo valor != None en 'datos'.
+    Marca Procesado=1 y FechaProcesado=GETDATE().
+
+    Mapeo esperado en 'datos':
+      RFC, CURP, TipoContribuyente, RazonSocial, Nombre,
+      ApellidoPaterno, ApellidoMaterno, EstatusPadron, CodigoPostal, FechaEmision
+
+    Retorna True si actualizó 1 fila.
+    """
+    # Filtrar solo columnas válidas y mantener orden consistente
+    columnas_validas = [
+        "RFC", "CURP", "TipoContribuyente", "RazonSocial", "NombresPersona",
+        "ApellidoPaterno", "ApellidoMaterno", "EstatusPadron", "CodigoPostal", "FechaEmision"
+    ]
+    payload: Dict[str, Any] = {c: datos.get(c) for c in columnas_validas if c in datos}
+
+    # Si todo viene None, de todos modos marcaremos procesado
+    set_clause = _build_update_set_clause(payload)
+
+    # Orden de parámetros (solo los que no fueron None)
+    params = [payload[c] for c in columnas_validas if c in payload and payload[c] is not None]
+    params.append(archivo_id)
+
+    sql = f"UPDATE dbo.Archivo SET {set_clause} WHERE ArchivoID = ?;"
+
+    cn = connect_archivos()
+    try:
+        cur = cn.cursor()
+        cur.execute(sql, params)
+        rows = cur.rowcount
+        cn.commit()
+        return rows == 1
+    except Exception as e:
+        try: cn.rollback()
+        except: pass
+        raise
+    finally:
+        try: cn.close()
+        except: pass
+>>>>>>> Stashed changes
