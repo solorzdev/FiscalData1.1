@@ -5,73 +5,12 @@ from typing import List, Tuple, Optional
 
 import pytesseract
 from PIL import Image, ImageFilter
-<<<<<<< Updated upstream
-
-# 🔹 Conexión usando config.py
-import mysql.connector
-from config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
-
-def conectar():
-    return mysql.connector.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        port=DB_PORT
-    )
-
-def existe_rfc(rfc: Optional[str]) -> bool:
-    if not rfc:
-        return False
-    conexion = conectar()
-    cursor = conexion.cursor()
-    cursor.execute("SELECT 1 FROM constancias WHERE rfc = %s LIMIT 1", (rfc,))
-    existe = cursor.fetchone() is not None
-    cursor.close()
-    conexion.close()
-    return existe
-
-def guardar_datos(datos):
-    conexion = conectar()
-    cursor = conexion.cursor()
-    sql = """
-        INSERT INTO constancias (
-            tipo_contribuyente, rfc, curp, fecha_emision, razon_social,
-            regimen_capital, nombre_comercial,
-            nombre, apellido_paterno, apellido_materno,
-            estatus_padron, codigo_postal,
-            archivo_origen, fecha_procesado
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
-    valores = (
-        datos['tipo_contribuyente'],
-        datos['rfc'],
-        datos.get('curp'),
-        datos['fecha_emision'],
-        datos.get('razon_social'),
-        datos.get('regimen_capital'),
-        datos.get('nombre_comercial'),
-        datos.get('nombre'),
-        datos.get('apellido_paterno'),
-        datos.get('apellido_materno'),
-        datos['estatus_padron'],
-        datos['codigo_postal'],
-        datos.get('archivo_origen'),
-        datos.get('fecha_procesado')
-    )
-    cursor.execute(sql, valores)
-    conexion.commit()
-    cursor.close()
-    conexion.close()
-=======
 from datetime import datetime
 
 import cv2
 
 # 🔹 Usaremos las utilidades para actualizar ARCHIVOS
 from database import actualizar_archivo_constancia, parse_archivo_id_from_filename
->>>>>>> Stashed changes
 
 # ===============================
 # Carpetas
@@ -532,19 +471,6 @@ def main():
         try:
             data = extract_from_image(path)
 
-<<<<<<< Updated upstream
-            # Validaciones mínimas
-            if not data.get("rfc"):
-                print(f"   ⚠️ No se detectó RFC en: {fname}")
-                logging.warning(f"No se detectó RFC en {fname}")
-                shutil.move(path, os.path.join(DIR_ERR, fname))
-                continue
-
-            # Duplicado por RFC
-            if existe_rfc(data["rfc"]):
-                print(f"   ⚠️ RFC duplicado, se mueve a errores: {data['rfc']}")
-                logging.warning(f"Duplicado detectado para RFC {data['rfc']} ({fname}), no se guarda.")
-=======
             # Normalizar fecha a date (SQL Server)
             try:
                 if data.get("fecha_emision") and data["fecha_emision"] != "No detectado":
@@ -559,7 +485,6 @@ def main():
             if not archivo_id:
                 print(f"   ❌ No se pudo derivar ArchivoID desde: {fname}")
                 logging.error(f"No se pudo derivar ArchivoID desde: {fname}")
->>>>>>> Stashed changes
                 shutil.move(path, os.path.join(DIR_ERR, fname))
                 continue
 
